@@ -1,0 +1,1 @@
+When running the app on a phone, onCreate() is called when the app is initially opened.  If the user presses the home button to leave the app, onPause() and onStop() are called.  If the user then returns to the app, onStart() and onResume() are called.  Pressing back causes onPause(), onStart(), and onDestroy() to be called.
