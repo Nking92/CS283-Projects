@@ -30,6 +30,7 @@ public class Helpers {
 	}
 	
 	public static void closeIfNotNull(Object object) {
+		if (object == null) return;
 		try {
 			object.getClass().getMethod("close", (Class<?>[])null)
 					.invoke(object, (Object[])null);

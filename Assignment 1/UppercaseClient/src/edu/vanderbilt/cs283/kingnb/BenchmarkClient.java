@@ -11,7 +11,8 @@ import java.util.Random;
 public class BenchmarkClient implements Client {
 
 	private static final int NUM_MSG = 1000;
-	private static final String[] STRINGS = { "oaiwjfioj2jiosjfoijg8290jtjkgj,avz.sadfo2",
+	private static final String[] STRINGS = {
+			"oaiwjfioj2jiosjfoijg8290jtjkgj,avz.sadfo2",
 			"oifjdiwojfjbz,.jxfjozjsodifjoi24", "str3",
 			"sdfjsfdWDFWDFWDFGJGHKHJKJGKLASJHGKLJSLAGKSLFKL>.s,asf..s",
 			"wdoifjsoijsogijgwes/a//a//////" };
