@@ -15,7 +15,7 @@ public class BenchmarkClient implements Client {
 
     private static final int NUM_THREADS = 50;
 
-    private static final int NUM_MSG = 3000;
+    private static final int NUM_MSG = 5000;
 
     private static final String[] STRINGS = {
             "oaiwjfioj2jiosjfoijg8290jtjkgj,avz.sadfo2", "oifjdiwojfjbz,.jxfjozjsodifjoi24",
@@ -45,7 +45,6 @@ public class BenchmarkClient implements Client {
                     }
                 }
             }
-            System.out.println("Thread " + Thread.currentThread().getId() + " awake");
             Socket socket = null;
             PrintStream writer = null;
             BufferedReader reader = null;
@@ -64,7 +63,6 @@ public class BenchmarkClient implements Client {
                 e.printStackTrace();
             } finally {
                 Helpers.closeIfNotNull(writer, socket);
-                System.out.println("Thread " + Thread.currentThread().getId() + " shutting down");
             }
         }
 
@@ -81,10 +79,9 @@ public class BenchmarkClient implements Client {
 
     @Override
     public void request() {
-        // Spawn 50 threads, let them send messages to the server 10000 times
+        // Spawn 50 threads, let them send messages to the server 5000 times
         // each, and time how long it takes
         List<Thread> threads = new ArrayList<Thread>(NUM_THREADS);
-        long start = System.currentTimeMillis();
         for (int i = 0; i < NUM_THREADS; i++) {
             Thread thread = new Thread(mQueryRunnable);
             threads.add(thread);
@@ -93,6 +90,7 @@ public class BenchmarkClient implements Client {
 
         mIsRunning = true;
 
+        long start = System.currentTimeMillis();
         synchronized (mLock) {
             mLock.notifyAll();
         }
