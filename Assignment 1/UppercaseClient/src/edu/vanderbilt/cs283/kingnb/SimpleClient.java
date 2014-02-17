@@ -1,3 +1,4 @@
+
 package edu.vanderbilt.cs283.kingnb;
 
 import java.io.BufferedReader;
@@ -9,21 +10,34 @@ import java.net.Socket;
 
 public class SimpleClient implements Client {
 
-	private Socket mSocket;
+    private Socket mSocket;
 
-	public SimpleClient(InetAddress address, int port) throws IOException {
-		mSocket = new Socket(address, port);
-	}
+    public SimpleClient(InetAddress address, int port) throws IOException {
+        mSocket = new Socket(address, port);
+    }
 
-	@Override
-	public void request() throws IOException {
-		try {
-			PrintWriter writer = new PrintWriter(mSocket.getOutputStream(), true);
-			BufferedReader reader = new BufferedReader(new InputStreamReader(
-					mSocket.getInputStream()));
-			writer.println("hello server");
-			String line = reader.readLine();
-			System.out.println("Server response: " + line);
-		} finally { }
-	}
+    @Override
+    public void request() {
+        try {
+            PrintWriter writer = new PrintWriter(mSocket.getOutputStream(), true);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    mSocket.getInputStream()));
+            writer.println("hello server");
+            mSocket.shutdownOutput();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                System.out.println("Server response: " + line);
+            }
+        } catch (IOException e) {
+            System.out.println("Something went wrong while sending a request");
+            e.printStackTrace();
+        }
+    }
+    
+    @Override
+    public void shutdown() {
+        if (!mSocket.isClosed()) {
+            Helpers.closeIfNotNull(mSocket);
+        }
+    }
 }

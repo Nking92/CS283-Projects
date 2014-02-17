@@ -16,6 +16,7 @@ public class Main {
 			client = new SimpleClient(InetAddress.getLocalHost(), Client.DEFAULT_PORT);
 		}
 		client.request();
+		client.shutdown();
 	}
 	
 }
