@@ -1,4 +1,4 @@
-package bananabank.client;
+package bananabank.server;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -9,8 +9,7 @@ public class BasicBananaBankClient {
 
 	public static void main(String[] args) {
 		try {
-			Socket socket = new Socket(BananaBankBenchmark.SERVER_ADDRESS,
-					BananaBankBenchmark.PORT);
+			Socket socket = new Socket("localhost", BananaBankServer.BANANA_PORT);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(
 					socket.getInputStream()));
 			PrintStream ps = new PrintStream(socket.getOutputStream());

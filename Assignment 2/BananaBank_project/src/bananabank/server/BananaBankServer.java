@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 public class BananaBankServer {
 
-	private static final int BANANA_PORT = 2000;
+	public static final int BANANA_PORT = 2000;
 	private static final String LINE_REGEX = "\\d+\\s+\\d+\\s+\\d+\\s*";
 	private static final String ACCOUNT_FILE = "accounts.txt";
 	private static final String SHUTDOWN_STR = "SHUTDOWN";
