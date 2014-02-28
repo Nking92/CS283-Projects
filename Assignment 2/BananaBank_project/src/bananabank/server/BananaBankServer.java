@@ -18,7 +18,6 @@ public class BananaBankServer {
 	private static final String LINE_REGEX = "\\d+\\s+\\d+\\s+\\d+\\s*";
 	private static final String ACCOUNT_FILE = "accounts.txt";
 	private static final String SHUTDOWN_STR = "SHUTDOWN";
-	private static final String LOCAL_ADDRESS = "127.0.0.1";
 
 	public static void main(String args[]) {
 		System.out.println("Starting server");
@@ -44,16 +43,13 @@ public class BananaBankServer {
 		while (true) {
 			try {
 				Socket s = ss.accept();
-				System.out.println("Accepted request from "
-						+ s.getInetAddress());
 				BufferedReader reader = new BufferedReader(
 						new InputStreamReader(s.getInputStream()));
 				PrintStream ps = new PrintStream(s.getOutputStream());
 				String line = reader.readLine();
 
 				if (line.equals(SHUTDOWN_STR)) {
-					if (s.getInetAddress().getHostAddress()
-							.equals(LOCAL_ADDRESS)) {
+					if (isLocalAddress(s.getInetAddress().getHostAddress())) {
 						System.out.println("Beginning shutdown");
 						System.out.println("Waiting for worker threads");
 						for (Thread t : threads) {
@@ -68,7 +64,8 @@ public class BananaBankServer {
 						System.out.println("Sockets closed");
 						break;
 					} else {
-						ps.println("Ignoring shutdown request from remote machine");
+						System.out.println("Ignoring shutdown request from remote address "
+								+ s.getInetAddress());
 					}
 				}
 
@@ -114,21 +111,21 @@ public class BananaBankServer {
 				String line;
 				while ((line = (!firstRead ? mFirstLine : mReader.readLine())) != null) {
 					if (line.equals(SHUTDOWN_STR)) {
-						if (mSocket.getInetAddress().getHostAddress()
-								.equals(LOCAL_ADDRESS)) {
+						if (isLocalAddress(mSocket.getInetAddress()
+								.getHostAddress())) {
 							// Tell the server to shut down
-							Socket s = new Socket(InetAddress.getLocalHost(),
-									BANANA_PORT);
+							Socket s = new Socket("localhost", BANANA_PORT);
 							PrintStream out = new PrintStream(
 									s.getOutputStream());
 							out.println(SHUTDOWN_STR);
 							// Echo the total
-							mPs.println(new BufferedReader(new InputStreamReader(
-									s.getInputStream())).readLine());
+							mPs.println(new BufferedReader(
+									new InputStreamReader(s.getInputStream()))
+									.readLine());
 							Helpers.closeIfNotNull(out, s);
 							break;
 						} else {
-							mPs.println("Ignoring shutdown request from remote address "
+							System.out.println("Ignoring shutdown request from remote address "
 									+ mSocket.getInetAddress());
 						}
 					} else if (!line.matches(LINE_REGEX)) {
@@ -175,6 +172,10 @@ public class BananaBankServer {
 			}
 		}
 
+	}
+
+	private static boolean isLocalAddress(String ipAddr) {
+		return ipAddr.equals("127.0.0.1");
 	}
 
 }
