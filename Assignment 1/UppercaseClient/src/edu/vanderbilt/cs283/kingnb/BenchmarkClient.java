@@ -9,52 +9,45 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BenchmarkClient implements Client {
 
     private static final int NUM_THREADS = 50;
 
-    private static final int NUM_MSG = 5000;
-
-    private static final String[] STRINGS = {
-            "oaiwjfioj2jiosjfoijg8290jtjkgj,avz.sadfo2", "oifjdiwojfjbz,.jxfjozjsodifjoi24",
-            "str3", "sdfjsfdWDFWDFWDFGJGHKHJKJGKLASJHGKLJSLAGKSLFKL>.s,asf..s",
-            "wdoifjsoijsogijgwes/a//a//////"
-    };
-
     private InetAddress mAddress;
 
-    private Object mLock = new Object();
-
-    private volatile boolean mIsRunning = false;
+    private AtomicBoolean mIsRunning = new AtomicBoolean(true);
+    private CountDownLatch mLatch = new CountDownLatch(1);
+    private List<Integer> mCounts = new ArrayList<Integer>();
 
     private int mPort;
-
-    private Runnable mQueryRunnable = new Runnable() {
-        private Random mRandom = new Random();
-
-        @Override
-        public void run() {
-            while (!mIsRunning) {
-                synchronized (mLock) {
-                    try {
-                        mLock.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            Socket socket = null;
+    
+    private Runnable mThroughputRunnable = new Runnable() {
+    	
+    	@Override public void run() {
+    		try {
+				mLatch.await();
+			} catch (InterruptedException e) { }
+    		Socket socket = null;
             PrintStream writer = null;
             BufferedReader reader = null;
             try {
                 socket = new Socket(mAddress, mPort);
                 writer = new PrintStream(socket.getOutputStream());
                 reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                for (int i = 0; i < NUM_MSG; i++) {
-                    writer.println(randomString());
+                int count = 0;
+                while (mIsRunning.get()) {
+                    writer.println("jello");
+                    reader.readLine();
+                    count++;
                 }
+                
+                synchronized(mCounts) {
+                	mCounts.add(count);
+                }
+                
                 socket.shutdownOutput();
 
                 // Wait for all the responses
@@ -64,12 +57,8 @@ public class BenchmarkClient implements Client {
             } finally {
                 Helpers.closeIfNotNull(writer, socket);
             }
-        }
-
-        private String randomString() {
-            int i = mRandom.nextInt(5);
-            return STRINGS[i];
-        }
+    	}
+    	
     };
 
     public BenchmarkClient(InetAddress addr, int port) {
@@ -79,22 +68,24 @@ public class BenchmarkClient implements Client {
 
     @Override
     public void request() {
-        // Spawn 50 threads, let them send messages to the server 5000 times
-        // each, and time how long it takes
+        // Spawn 50 threads
         List<Thread> threads = new ArrayList<Thread>(NUM_THREADS);
         for (int i = 0; i < NUM_THREADS; i++) {
-            Thread thread = new Thread(mQueryRunnable);
+        	Thread thread = new Thread(mThroughputRunnable);
             threads.add(thread);
             thread.start();
         }
 
-        mIsRunning = true;
+        // Let the threads run
+        mLatch.countDown();
 
-        long start = System.currentTimeMillis();
-        synchronized (mLock) {
-            mLock.notifyAll();
-        }
-
+        // Wait for 10 seconds and stop the threads
+        try {
+			Thread.sleep(10*1000);
+		} catch (InterruptedException e1) {
+		}
+        
+        mIsRunning.set(false);
         for (Thread thread : threads) {
             try {
                 thread.join();
@@ -103,8 +94,13 @@ public class BenchmarkClient implements Client {
             }
         }
 
-        long end = System.currentTimeMillis();
-        System.out.println("Benchmark took " + (end - start) + " milliseconds");
+        // Reduce the counts
+        int totalCount = 0;
+        for (Integer n : mCounts) {
+        	totalCount += n;
+        }
+        
+        System.out.println("Server served " + totalCount + " queries in 10 seconds");
     }
 
     @Override
