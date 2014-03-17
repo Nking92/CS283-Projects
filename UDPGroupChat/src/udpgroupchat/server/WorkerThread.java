@@ -4,11 +4,13 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Random;
 
 public class WorkerThread extends Thread {
 
 	private DatagramPacket rxPacket;
 	private DatagramSocket socket;
+	private static final Random rand = new Random();
 
 	public WorkerThread(DatagramPacket packet, DatagramSocket socket) {
 		this.rxPacket = packet;
@@ -61,19 +63,22 @@ public class WorkerThread extends Thread {
 		// get the port of the sender from the rxPacket
 		int port = this.rxPacket.getPort();
 
-		// create a client object, and put it in the map that assigns names
+		// create a client object, and put it in the map that assigns integers
 		// to client objects
 		Server.clientEndPoints.add(new ClientEndPoint(address, port));
-		// note that calling clientEndPoints.add() with the same endpoint info
-		// (address and port)
-		// multiple times will not add multiple instances of ClientEndPoint to
-		// the set, because ClientEndPoint.hashCode() is overridden. See
-		// http://docs.oracle.com/javase/7/docs/api/java/util/Set.html for
-		// details.
+		int clientId;
+		synchronized(rand) {
+			clientId = rand.nextInt();
+			while (Server.clientMap.keySet().contains(clientId)) {
+				clientId = rand.nextInt();
+			}
+		}
 
-		// tell client we're OK
+		// Acknowledge the client and append the assigned ID
+		String response = "REGISTERED " + clientId;
+		
 		try {
-			send("REGISTERED\n", this.rxPacket.getAddress(),
+			send(response + "\n", this.rxPacket.getAddress(),
 					this.rxPacket.getPort());
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -84,6 +89,8 @@ public class WorkerThread extends Thread {
 		ClientEndPoint clientEndPoint = new ClientEndPoint(
 				this.rxPacket.getAddress(), this.rxPacket.getPort());
 
+		
+		
 		// check if client is in the set of registered clientEndPoints
 		if (Server.clientEndPoints.contains(clientEndPoint)) {
 			// yes, remove it

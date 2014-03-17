@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class Server {
@@ -21,6 +23,8 @@ public class Server {
 	// concurrent threads without additional locking
 	protected static final Set<ClientEndPoint> clientEndPoints = Collections
 			.synchronizedSet(new HashSet<ClientEndPoint>());
+	protected static final Map<Integer, ClientEndPoint> clientMap = Collections
+			.synchronizedMap(new HashMap<Integer, ClientEndPoint>());
 
 	// constructor
 	Server(int port) {
