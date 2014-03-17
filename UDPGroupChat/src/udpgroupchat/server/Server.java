@@ -72,11 +72,14 @@ public class Server {
 				t.start();
 			}
 
-			while (!socket.isClosed());
+			while (!socket.isClosed())
+				;
 		} catch (IOException e) {
 			// we jump out here if there's an error, or if the worker thread (or
 			// someone else) closed the socket
-			e.printStackTrace();
+			if (!e.getMessage().contains("Socket closed")) {
+				e.printStackTrace();
+			}
 		} finally {
 			if (socket != null && !socket.isClosed())
 				socket.close();

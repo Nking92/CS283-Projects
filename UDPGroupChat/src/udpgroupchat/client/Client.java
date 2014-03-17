@@ -3,7 +3,6 @@ package udpgroupchat.client;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Random;
@@ -49,7 +48,7 @@ public class Client {
 			send("REGISTER");
 
 			byte[] buf = new byte[Server.MAX_PACKET_SIZE];
-			DatagramPacket rxPacket = new DatagramPacket(buf, buf.length);
+			final DatagramPacket rxPacket = new DatagramPacket(buf, buf.length);
 			socket.receive(rxPacket);
 			String payload = new String(rxPacket.getData(), 0,
 					rxPacket.getLength());
@@ -74,7 +73,7 @@ public class Client {
 
 			// Send random messages to a random group every 2 seconds
 			// Poll the server for messages every 5 seconds
-			ScheduledExecutorService msgEx = Executors
+			final ScheduledExecutorService msgEx = Executors
 					.newSingleThreadScheduledExecutor(), pollEx = Executors
 					.newSingleThreadScheduledExecutor();
 
@@ -95,22 +94,46 @@ public class Client {
 			msgEx.scheduleAtFixedRate(msgRun, 0, 2, TimeUnit.SECONDS);
 			pollEx.scheduleAtFixedRate(pollRun, 0, 5, TimeUnit.SECONDS);
 
-			// Keep retrieving responses
-			while (true) {
-				socket.receive(rxPacket);
-				payload = new String(rxPacket.getData(), 0,
-						rxPacket.getLength());
-				sendAck(payload);
-				// Echo the payload
-				System.out.print(payload);
-			}
+			// Keep retrieving responses for a random number of seconds between
+			// 30 and 45 before unregistering
+			int numSecs = rand.nextInt(15) + 30;
+			Runnable run = new Runnable() {
+				public void run() {
+					try {
+						while (!Thread.interrupted()) {
+							try {
+								socket.receive(rxPacket);
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+							String payload = new String(rxPacket.getData(), 0,
+									rxPacket.getLength());
+							sendAck(payload);
+							// Echo the payload
+							System.out.print(payload);
+						}
+                        sendUnregister();
+					} finally {
+						msgEx.shutdownNow();
+						pollEx.shutdownNow();
+						if (socket != null && !socket.isClosed())
+							socket.close();
+					}
+				}
+			};
+			Thread t = new Thread(run);
+			t.start();
+
+			Thread.sleep(numSecs * 1000);
+			System.out.println("Shutting down client");
+			t.interrupt();
 		} catch (IOException e) {
 			// we jump out here if there's an error
 			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		} finally {
-			// close the socket
-			if (socket != null && !socket.isClosed())
-				socket.close();
+			// let the thread close the socket
 		}
 	}
 
@@ -149,16 +172,22 @@ public class Client {
 		send(msg);
 	}
 
+	private void sendUnregister() {
+		send("UNREGISTER " + id);
+	}
+
 	private void send(String msg) {
-		byte[] bytes = msg.getBytes();
-		try {
-			DatagramPacket p = new DatagramPacket(bytes, bytes.length,
-					serverSocketAddress);
-			socket.send(p);
-		} catch (SocketException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		if (!socket.isClosed()) {
+			byte[] bytes = msg.getBytes();
+			try {
+				DatagramPacket p = new DatagramPacket(bytes, bytes.length,
+						serverSocketAddress);
+				socket.send(p);
+			} catch (SocketException e1) {
+				e1.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

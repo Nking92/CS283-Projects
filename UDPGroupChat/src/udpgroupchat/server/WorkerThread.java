@@ -304,6 +304,10 @@ public class WorkerThread extends Thread {
 				e.printStackTrace();
 			}
 			Server.socket.close();
+		} else {
+			String msg = "SHUTDOWN_UNAUTHORIZED FROM "
+					+ rxPacket.getAddress().getHostAddress() + "\n";
+			send(msg, rxPacket.getAddress(), rxPacket.getPort());
 		}
 	}
 
@@ -319,7 +323,13 @@ public class WorkerThread extends Thread {
 	}
 
 	private static boolean isLocalAddress(String addr) {
-		return addr.equals("127.0.0.1");
+		if (addr.equals("127.0.0.1")) {
+			return true;
+		} else if (addr.contains("%")) {
+			return addr.substring(0, addr.indexOf('%')).equals("0:0:0:0:0:0:0:1");
+		} else {
+			return false;
+		}
 	}
 
 }
