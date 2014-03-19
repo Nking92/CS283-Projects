@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +65,16 @@ public class WorkerThread extends Thread {
 			onPollRequested(payload);
 			return;
 		}
+		
+		if (payload.startsWith("LIST")) {
+			onListRequested(payload);
+			return;
+		}
+		
+		if (payload.startsWith("LEAVE")) {
+			onLeaveRequested(payload);
+			return;
+		}
 
 		if (payload.startsWith("JOIN")) {
 			onJoinRequested(payload);
@@ -74,7 +85,7 @@ public class WorkerThread extends Thread {
 			onAckReceived(payload);
 			return;
 		}
-
+		
 		if (payload.startsWith("SHUTDOWN")) {
 			onShutdownReceived(payload);
 			return;
@@ -212,6 +223,7 @@ public class WorkerThread extends Thread {
 			}
 		}
 	}
+	
 
 	private void onBadRequest(String payload) {
 		send("BAD REQUEST\n", this.rxPacket.getAddress(),
@@ -272,6 +284,43 @@ public class WorkerThread extends Thread {
 		send("JOIN_SUCCESS " + groupName + "\n", rxPacket.getAddress(),
 				rxPacket.getPort());
 	}
+	
+	private void onLeaveRequested(String payload) {
+		int clientId = extractClientId(payload);
+		String groupName = trimHeader(payload);
+		boolean success;
+		synchronized (Server.clientGroupMap) {
+			List<Integer> list = Server.clientGroupMap.get(groupName);
+			if (list != null) {
+				success = list.remove(Integer.valueOf(clientId));
+			} else {
+				success = false;
+			}
+		}
+		String msg = "LEAVE_" + (success ? "SUCCESS" : "FAIL") + "\n";
+		send(msg, rxPacket.getAddress(), rxPacket.getPort());
+	}
+
+	private void onListRequested(String payload) {
+		StringBuilder bldr = new StringBuilder("LIST_SUCCESS LISTS: ");
+		String regex = payload.substring(5); // 5 is the index after LIST 
+		synchronized (Server.clientGroupMap) {
+			Set<String> groups = Server.clientGroupMap.keySet();
+			if (groups.isEmpty()) {
+				bldr.append("<NONE>");
+			} else {
+				for (String group : Server.clientGroupMap.keySet()) {
+					if (group.matches(regex)) {
+						bldr.append(group).append(", ");
+					}
+				}
+				// Delete the trailing comma
+				bldr.delete(bldr.length()-2, bldr.length());
+			}
+		}
+		bldr.append("\n");
+		send(bldr.toString(), rxPacket.getAddress(), rxPacket.getPort());
+	}
 
 	private void onShutdownReceived(String payload) {
 		if (isLocalAddress(rxPacket.getAddress().getHostAddress())) {
@@ -325,10 +374,9 @@ public class WorkerThread extends Thread {
 	private static boolean isLocalAddress(String addr) {
 		if (addr.equals("127.0.0.1")) {
 			return true;
-		} else if (addr.contains("%")) {
-			return addr.substring(0, addr.indexOf('%')).equals("0:0:0:0:0:0:0:1");
 		} else {
-			return false;
+			// IPv6
+			return addr.startsWith("0:0:0:0:0:0:0:1");
 		}
 	}
 

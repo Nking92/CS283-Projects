@@ -63,6 +63,9 @@ public class Client {
 
 			// Set a random name
 			setRandomName();
+			
+			// List the channels
+			listChannels();
 
 			// Join 3 of the 6 channels stored in the static array
 			Random rand = new Random();
@@ -158,6 +161,10 @@ public class Client {
 		}
 		msg = msg.trim();
 		send(msg);
+	}
+	
+	private void listChannels() {
+		send("LIST .*");
 	}
 
 	private void pollServer() {
