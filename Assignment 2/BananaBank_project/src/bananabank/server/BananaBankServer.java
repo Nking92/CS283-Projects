@@ -17,6 +17,7 @@ public class BananaBankServer {
 	private static final String LINE_REGEX = "\\d+\\s+\\d+\\s+\\d+\\s*";
 	private static final String ACCOUNT_FILE = "accounts.txt";
 	private static final String SHUTDOWN_STR = "SHUTDOWN";
+	private static WorkerThread shutdownThread;
 
 	public static void main(String args[]) {
 		System.out.println("Starting server");
@@ -39,40 +40,25 @@ public class BananaBankServer {
 		}
 
 		List<WorkerThread> threads = new LinkedList<WorkerThread>();
-		while (true) {
-			try {
+		try {
+			while (true) {
 				Socket s = ss.accept();
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(s.getInputStream()));
-				PrintStream ps = new PrintStream(s.getOutputStream());
-				String line = reader.readLine();
-
-				if (line.equals(SHUTDOWN_STR)) {
-					if (isLocalAddress(s.getInetAddress().getHostAddress())) {
-						System.out.println("Beginning shutdown");
-						System.out.println("Waiting for worker threads");
-						for (Thread t : threads) {
-							t.join();
-						}
-						System.out.println("Writing account info to file");
-						bank.save(ACCOUNT_FILE);
-						ps.println(total(bank.getAllAccounts()));
-						System.out.println("Closing server socket.");
-						s.close();
-						ss.close();
-						System.out.println("Sockets closed");
-						break;
-					} else {
-						System.out.println("Ignoring shutdown request from remote address "
-								+ s.getInetAddress());
-					}
+				WorkerThread t = new WorkerThread(s, bank, ss, threads);
+				threads.add(t);
+				t.start();
+			}
+		} catch (IOException e) {
+			if (!e.getMessage().equals("Socket closed")) {
+				e.printStackTrace();
+			}
+		} finally {
+			Helpers.closeIfNotNull(ss);
+			if (shutdownThread != null) {
+				try {
+					shutdownThread.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-
-				new WorkerThread(s, bank, reader, ps, line).start();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
 			}
 		}
 
@@ -89,46 +75,52 @@ public class BananaBankServer {
 
 	private static class WorkerThread extends Thread {
 		private Socket mSocket;
+		private ServerSocket mServerSocket;
 		private BananaBank mBank;
-		private PrintStream mPs;
-		private BufferedReader mReader;
-		private String mFirstLine;
+		private List<WorkerThread> mWorkers;
 
-		public WorkerThread(Socket socket, BananaBank bank,
-				BufferedReader reader, PrintStream ps, String firstLine) {
+		public WorkerThread(Socket socket, BananaBank bank, ServerSocket ss,
+				List<WorkerThread> workers) {
 			mSocket = socket;
 			mBank = bank;
-			mReader = reader;
-			mPs = ps;
-			mFirstLine = firstLine;
+			mServerSocket = ss;
+			mWorkers = workers;
 		}
 
 		@Override
 		public void run() {
+			BufferedReader reader = null;
+			PrintStream ps = null;
 			try {
-				boolean firstRead = false;
 				String line;
-				while ((line = (!firstRead ? mFirstLine : mReader.readLine())) != null) {
+				reader = new BufferedReader(new InputStreamReader(
+						mSocket.getInputStream()));
+				ps = new PrintStream(mSocket.getOutputStream());
+				while ((line = reader.readLine()) != null) {
 					if (line.equals(SHUTDOWN_STR)) {
 						if (isLocalAddress(mSocket.getInetAddress()
 								.getHostAddress())) {
-							// Tell the server to shut down
-							Socket s = new Socket("localhost", BANANA_PORT);
-							PrintStream out = new PrintStream(
-									s.getOutputStream());
-							out.println(SHUTDOWN_STR);
-							// Echo the total
-							mPs.println(new BufferedReader(
-									new InputStreamReader(s.getInputStream()))
-									.readLine());
-							Helpers.closeIfNotNull(out, s);
+							mServerSocket.close();
+							shutdownThread = this;
+							for (WorkerThread t : mWorkers) {
+								try {
+									if (t.getId() != Thread.currentThread()
+											.getId()) {
+										t.join();
+									}
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
+							}
+							ps.println(total(mBank.getAllAccounts()));
 							break;
 						} else {
-							System.out.println("Ignoring shutdown request from remote address "
-									+ mSocket.getInetAddress());
+							System.out
+									.println("Ignoring shutdown request from remote address "
+											+ mSocket.getInetAddress());
 						}
 					} else if (!line.matches(LINE_REGEX)) {
-						mPs.println("Input \""
+						ps.println("Input \""
 								+ line
 								+ "\" does not match the required format. Ignoring.");
 					} else {
@@ -143,10 +135,10 @@ public class BananaBankServer {
 							dst = mBank.getAccount(to);
 						}
 						if (src == null) {
-							mPs.println("Account number " + from
+							ps.println("Account number " + from
 									+ " invalid. Ignoring transfer " + line);
 						} else if (dst == null) {
-							mPs.println("Account number " + to
+							ps.println("Account number " + to
 									+ " invalid. Ignoring transfer " + line);
 						} else {
 							// Acquire lock for lower numbered account first
@@ -155,19 +147,20 @@ public class BananaBankServer {
 							synchronized (lower) {
 								synchronized (upper) {
 									src.transferTo(amount, dst);
-									mPs.println(amount
+									ps.println(amount
 											+ " transferred from account "
 											+ from + " to account " + to + ".");
 								}
 							}
 						}
 					}
-					firstRead = true;
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+				if (!e.getMessage().equals("Socket closed")) {
+					e.printStackTrace();
+				}
 			} finally {
-				Helpers.closeIfNotNull(mReader, mPs, mSocket);
+				Helpers.closeIfNotNull(reader, ps, mSocket);
 			}
 		}
 
