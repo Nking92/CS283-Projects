@@ -20,7 +20,7 @@ public class TicTacToeServer {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger("TicTacToeServer");
 
-	private final DatagramSocket mSocket, mMatchSocket1, mMatchSocket2;
+	private final DatagramSocket mSocket; 
 	private final List<WorkerThread> mThreads = new LinkedList<WorkerThread>();
 	private final Map<Integer, Integer> mOpponents = Collections
 			.synchronizedMap(new HashMap<Integer, Integer>());
@@ -30,8 +30,6 @@ public class TicTacToeServer {
 
 	private TicTacToeServer(int port) throws SocketException {
 		mSocket = new DatagramSocket(port);
-		mMatchSocket1 = new DatagramSocket(port - 1);
-		mMatchSocket2 = new DatagramSocket(port - 2);
 	}
 
 	private void serve() {
