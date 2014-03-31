@@ -3,99 +3,128 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical" >
-    
-    <LinearLayout 
+
+    <LinearLayout
         android:id="@+id/row1"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="33">
+        android:layout_weight="33"
+        android:orientation="horizontal" >
+
         <Button
             android:id="@+id/topLeftButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onTopLeftClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/topCenterButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onTopCenterClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/topRightButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onTopRightClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
-    </LinearLayout>   
-    <LinearLayout 
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/row2"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="33">
+        android:layout_weight="33"
+        android:orientation="horizontal" >
+
         <Button
             android:id="@+id/middleLeftButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onMiddleLeftClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/middleCenterButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onMiddleCenterClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/middleRightButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onMiddleRightClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
-    </LinearLayout>   
-    <LinearLayout 
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/row3"
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="33">
+        android:layout_weight="33"
+        android:orientation="horizontal" >
+
         <Button
             android:id="@+id/bottomLeftButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onBottomLeftClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/bottomCenterButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onBottomCenterClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+
         <Button
             android:id="@+id/bottomRightButton"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="33"
+            android:onClick="onBottomRightClick"
             android:text="@string/empty_button"
-            android:textSize="20sp"
-            android:textColor="@color/green" />
-    </LinearLayout>   
+            android:textColor="@color/green"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onGameStart"
+        android:text="Start Game"
+        android:textSize="20sp" >
+    </Button>
 
 </LinearLayout>
