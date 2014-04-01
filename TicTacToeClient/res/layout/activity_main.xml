@@ -122,7 +122,7 @@
         android:id="@+id/startButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="onGameStart"
+        android:onClick="onGameStartClick"
         android:text="Start Game"
         android:textSize="20sp" >
     </Button>

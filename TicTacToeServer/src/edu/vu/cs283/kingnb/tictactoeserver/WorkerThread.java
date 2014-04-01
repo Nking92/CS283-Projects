@@ -169,7 +169,6 @@ public class WorkerThread extends Thread {
 		} else {
 			System.out.println("Got unknown ack: " + ack);
 		}
-		WorkerThread.PENDING_RESPONSE_MAP.remove(ack);
 	}
 
 }
