@@ -201,7 +201,9 @@ public class MainActivity extends Activity {
     }
 
     private void clientTurn(int row, int col, View v) {
-        if (!mIsMyTurn) {
+        if (!mGameStarted) {
+            Toast.makeText(this, "The game has not started yet.", Toast.LENGTH_LONG).show();
+        } else if (!mIsMyTurn) {
             Toast.makeText(this, "It is not your turn.", Toast.LENGTH_LONG).show();
         } else {
             turn(row, col, v);

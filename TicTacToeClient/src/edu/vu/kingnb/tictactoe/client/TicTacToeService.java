@@ -76,7 +76,11 @@ public class TicTacToeService extends Service {
                     String response = new String(p.getData(), 0, p.getLength()).trim();
                     new ReactorThread(response).start();
                 } catch (IOException e) {
-                    Log.e(TAG, "Error receiving connection response", e);
+                    if (mSocket.isClosed()) {
+                        Log.d(TAG, "Socket closed. Terminating receive thread.");
+                    } else {
+                        Log.e(TAG, "Error receiving connection response", e);
+                    }
                 }
             }
         }
@@ -117,10 +121,6 @@ public class TicTacToeService extends Service {
 
             acknowledge(ack_id);
         }
-    }
-
-    private String trimJunk(String str) {
-        return str.substring(0, str.indexOf("\n"));
     }
 
     // ======================================================================
@@ -238,6 +238,12 @@ public class TicTacToeService extends Service {
             ex.shutdownNow();
         }
         return false;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "Service onDestroy()");
     }
 
     public void setMessenger(Messenger m) {
