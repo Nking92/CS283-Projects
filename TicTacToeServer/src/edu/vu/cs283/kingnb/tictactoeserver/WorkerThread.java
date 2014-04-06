@@ -20,7 +20,7 @@ public class WorkerThread extends Thread {
 	private static final Random RAND = new Random();
 	private static final Logger LOGGER = LoggerFactory
 			.getLogger("WorkerThread");
-	private static final int ACK_TIMEOUT = 60;
+	private static final int ACK_TIMEOUT = 5;
 	private static final Map<String, ScheduledExecutorService> PENDING_RESPONSE_MAP = Collections
 			.synchronizedMap(new HashMap<String, ScheduledExecutorService>());
 
