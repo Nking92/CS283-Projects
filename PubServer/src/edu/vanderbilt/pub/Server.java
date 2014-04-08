@@ -1,15 +1,17 @@
 package edu.vanderbilt.pub;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,71 +19,108 @@ import org.slf4j.LoggerFactory;
 public class Server {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger("Server");
+	private static final int DEFAULT_PORT = 20050;
+	private static final int NUM_ORDERS_TO_STORE = 75;
 
-	private DatagramSocket mSocket;
-	private Map<ClientToken, ClientEndPoint> TOKEN_TO_CLIENT_MAP = Collections
-			.synchronizedMap(new HashMap<ClientToken, ClientEndPoint>());
-	private Map<ClientEndPoint, ClientToken> CLIENT_TO_TOKEN_MAP = Collections
-			.synchronizedMap(new HashMap<ClientEndPoint, ClientToken>());
-	private final Random rand = new Random();
+	private final ServerSocket mServerSocket;
+	private final ExecutorService mExecutor = Executors.newCachedThreadPool();
+	private final Queue<Integer> mOrderNums = new LinkedList<Integer>();
+	private String mCached;
+	private AtomicBoolean isCacheGood = new AtomicBoolean(false);
 
-	public Server(int port) throws SocketException {
-		mSocket = new DatagramSocket(port);
+	private Server(int port) throws IOException {
+		mServerSocket = new ServerSocket(port);
 	}
 
-	public void serve() throws IOException {
-		try {
-			while (true) {
-				// create an empty UDP packet
-				byte[] buf = new byte[Constants.MAX_PACKET_SIZE];
-				DatagramPacket packet = new DatagramPacket(buf, buf.length);
-				mSocket.receive(packet);
-				LOGGER.debug("Accepted packet from {}:{}", packet.getAddress(),
-						packet.getPort());
-				WorkerThread t = new WorkerThread(packet, mSocket, this);
-				t.start();
-			}
-		} finally {
-			mSocket.close();
-		}
-	}
-
-	public ClientToken addClient(ClientEndPoint cep) {
-		synchronized (TOKEN_TO_CLIENT_MAP) {
-			synchronized (CLIENT_TO_TOKEN_MAP) {
-				if (CLIENT_TO_TOKEN_MAP.containsKey(cep)) {
-					return CLIENT_TO_TOKEN_MAP.get(cep);
-				} else {
-					ClientToken tok = getUnusedToken();
-					TOKEN_TO_CLIENT_MAP.put(tok, cep);
-					CLIENT_TO_TOKEN_MAP.put(cep, tok);
-					return tok;
-				}
+	private void serve() throws IOException {
+		while (true) {
+			Socket s = mServerSocket.accept();
+			try {
+				mExecutor.submit(new ResponseHandler(s));
+			} catch (RejectedExecutionException e) {
+				LOGGER.error("Task rejected", e);
 			}
 		}
-	}
-
-	private ClientToken getUnusedToken() {
-		Set<ClientToken> tokens = TOKEN_TO_CLIENT_MAP.keySet();
-		ClientToken candidate = getRandomToken();
-		while (tokens.contains(candidate)) {
-			candidate = getRandomToken();
-		}
-		return candidate;
-	}
-	
-	
-	private ClientToken getRandomToken() {
-		return new ClientToken(rand.nextInt(Constants.MAX_TOKEN));
 	}
 
 	public static void main(String[] args) {
 		try {
-			new Server(Constants.DEFAULT_PORT).serve();
+			new Server(DEFAULT_PORT).serve();
 		} catch (Exception e) {
 			LOGGER.error("Fatal: Caught exception in main", e);
 		}
 		LOGGER.error("Server shutting down");
+	}
+
+	private class ResponseHandler implements Runnable {
+
+		private Socket mSocket;
+
+		public ResponseHandler(Socket s) {
+			mSocket = s;
+		}
+
+		@Override
+		public void run() {
+			try {
+				BufferedReader rdr = new BufferedReader(new InputStreamReader(
+						mSocket.getInputStream()));
+				String line = rdr.readLine();
+				String[] arr = line.split(" ");
+				String request = arr[0].toLowerCase();
+				if (request.equals("post")) {
+					addOrder(arr[1]);
+				} else if (request.equals("read")) {
+					sendOrders(mSocket);
+				} else {
+					LOGGER.error("Got invalid request {}", request);
+				}
+			} catch (IOException e) {
+				LOGGER.error("Response handler exception", e);
+			} finally {
+				try {
+					mSocket.close();
+				} catch (IOException e) {
+					LOGGER.error("Error closing socket", e);
+				}
+			}
+		}
+
+		private void addOrder(String order) {
+			Integer orderNum = Integer.valueOf(order);
+			LOGGER.info("Adding order number {}", order);
+			synchronized (mOrderNums) {
+				if (mOrderNums.size() > NUM_ORDERS_TO_STORE) {
+					mOrderNums.remove();
+				}
+				mOrderNums.offer(orderNum);
+				isCacheGood.set(false);
+			}
+		}
+
+		private String getOrderStr() {
+			if (!isCacheGood.get()) {
+				synchronized (mOrderNums) {
+					StringBuilder sb = new StringBuilder();
+					for (Integer i : mOrderNums) {
+						sb.append(i).append(",");
+					}
+					if (sb.length() > 0) {
+						// delete trailing comma
+						sb.deleteCharAt(sb.length() - 1);
+					}
+					mCached = sb.toString();
+					isCacheGood.set(true);
+				}
+			}
+			return mCached;
+		}
+
+		private void sendOrders(Socket s) throws IOException {
+			PrintStream writer = new PrintStream(s.getOutputStream());
+			writer.println(getOrderStr());
+			writer.close();
+		}
 	}
 
 }
