@@ -1,0 +1,9 @@
+c:\users\nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\bin\Debug\PubNotifier.exe.config
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\bin\Debug\PubNotifier.exe
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\bin\Debug\PubNotifier.pdb
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.csprojResolveAssemblyReference.cache
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.Properties.Resources.resources
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.csproj.GenerateResource.Cache
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.exe
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.pdb
+C:\Users\Nick\documents\visual studio 2013\Projects\PubNotifier\PubNotifier\obj\Debug\PubNotifier.OrderEntryForm.resources
